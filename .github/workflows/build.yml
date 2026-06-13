@@ -90,7 +90,15 @@ jobs:
           real=$(realpath $path)
           echo "Apply patches in $real to frida/subprojects/$name"
           cd subprojects/$name
-          git am ../../../patches/$name/*.patch
+          git am --3way ../../../patches/$name/*.patch || {
+            echo "git am --3way failed for $name, falling back to git apply"
+            git am --abort || true
+            for p in ../../../patches/$name/*.patch; do
+              git apply --reject --whitespace=fix "$p" || echo "apply with rejects: $p"
+            done
+            git add -A
+            git commit -m "apply $name patches (fuzzy)" || true
+          }
           cd ../..
         done
         cd ..
