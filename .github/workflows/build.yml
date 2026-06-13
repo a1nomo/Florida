@@ -36,6 +36,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      # main 用的是修改过的 build.yml；patches/ 从 17.12.0 tag 拿
+    - name: Checkout patches from 17.12.0 tag
+      run: |
+        git clone --depth 1 -b 17.12.0 https://github.com/Ylarod/Florida /tmp/florida-17.12
+        rm -rf patches
+        cp -r /tmp/florida-17.12/patches .
+        ls patches/
 
     - uses: actions/setup-node@v4
       with:
