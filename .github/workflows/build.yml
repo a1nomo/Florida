@@ -37,11 +37,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       # main 用的是修改过的 build.yml；patches/ 从 17.12.0 tag 拿
-    - name: Checkout patches from 17.12.0 tag
+    - name: Checkout latest patches from upstream Florida
       run: |
-        git clone --depth 1 -b 17.12.0 https://github.com/Ylarod/Florida /tmp/florida-17.12
+        git clone --depth 1 https://github.com/Ylarod/Florida /tmp/florida-up
         rm -rf patches
-        cp -r /tmp/florida-17.12/patches .
+        cp -r /tmp/florida-up/patches .
         ls patches/
 
     - uses: actions/setup-node@v4
@@ -82,7 +82,7 @@ jobs:
         export ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}
         echo "ANDROID_NDK_ROOT=$ANDROID_NDK_ROOT"
 
-        git clone --depth 1 -b 17.12.0 --recurse-submodules https://github.com/frida/frida
+        git clone --recurse-submodules https://github.com/frida/frida
         cd frida
         for path in ../patches/*
         do
