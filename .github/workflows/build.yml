@@ -87,18 +87,26 @@ jobs:
         for path in ../patches/*
         do
           name=$(basename $path)
-          real=$(realpath $path)
-          echo "Apply patches in $real to frida/subprojects/$name"
+          echo "::group::patches for $name"
           cd subprojects/$name
-          # 删掉与最新 frida rpc.vala 冲突的 string_frida_rpc patch(仅隐蔽性微调,非核心反检测)
-          rm -f ../../../patches/$name/*string_frida_rpc*.patch
-          git am --3way ../../../patches/$name/*.patch || {
-            echo "[warn] some patch failed; skipping conflicting ones"
-            while [ -d .git/rebase-apply ]; do
-              git am --skip || break
-            done
-          }
+          # Apply each patch individually so one conflict doesn't block the rest.
+          for p in ../../../patches/$name/*.patch; do
+            pn=$(basename "$p")
+            if git am --3way "$p" >/dev/null 2>&1; then
+              echo "[OK]   $pn"
+            else
+              git am --abort >/dev/null 2>&1 || true
+              # try plain apply (ignore .rej) as a looser fallback
+              if git apply --3way "$p" >/dev/null 2>&1; then
+                git add -A && git commit -q -m "apply $pn (3way)" || true
+                echo "[OK3]  $pn"
+              else
+                echo "[SKIP] $pn  <-- did NOT apply"
+              fi
+            fi
+          done
           cd ../..
+          echo "::endgroup::"
         done
         cd ..
 
