@@ -89,18 +89,22 @@ jobs:
           name=$(basename $path)
           echo "::group::patches for $name"
           cd subprojects/$name
-          # Apply each patch individually so one conflict doesn't block the rest.
+          # 0001 string_frida_rpc conflicts with recent frida rpc.vala and is
+          # non-essential (only renames the "frida:rpc" string). Drop it.
+          rm -f ../../../patches/$name/*string_frida_rpc*.patch
           for p in ../../../patches/$name/*.patch; do
             pn=$(basename "$p")
             if git am --3way "$p" >/dev/null 2>&1; then
               echo "[OK]   $pn"
             else
               git am --abort >/dev/null 2>&1 || true
-              # try plain apply (ignore .rej) as a looser fallback
-              if git apply --3way "$p" >/dev/null 2>&1; then
-                git add -A && git commit -q -m "apply $pn (3way)" || true
-                echo "[OK3]  $pn"
+              if git apply "$p" >/dev/null 2>&1; then
+                git add -A && git commit -q -m "apply $pn" || true
+                echo "[OK2]  $pn"
               else
+                # ensure no partial/conflict residue left behind
+                git checkout -- . >/dev/null 2>&1 || true
+                git clean -fd >/dev/null 2>&1 || true
                 echo "[SKIP] $pn  <-- did NOT apply"
               fi
             fi
