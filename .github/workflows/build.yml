@@ -90,14 +90,13 @@ jobs:
           real=$(realpath $path)
           echo "Apply patches in $real to frida/subprojects/$name"
           cd subprojects/$name
+          # 删掉与最新 frida rpc.vala 冲突的 string_frida_rpc patch(仅隐蔽性微调,非核心反检测)
+          rm -f ../../../patches/$name/*string_frida_rpc*.patch
           git am --3way ../../../patches/$name/*.patch || {
-            echo "git am --3way failed for $name, falling back to git apply"
-            git am --abort || true
-            for p in ../../../patches/$name/*.patch; do
-              git apply --reject --whitespace=fix "$p" || echo "apply with rejects: $p"
+            echo "[warn] some patch failed; skipping conflicting ones"
+            while [ -d .git/rebase-apply ]; do
+              git am --skip || break
             done
-            git add -A
-            git commit -m "apply $name patches (fuzzy)" || true
           }
           cd ../..
         done
